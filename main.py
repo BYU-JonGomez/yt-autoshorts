@@ -1,14 +1,19 @@
-import json
 import os
+from core.ai_generator import generate_multiple
 from core.scene_builder import create_scene_pro
 from core.video_builder import create_video, add_music
-from core.utils import check_ffmpeg
+from core.utils import check_ffmpeg, validate_script
 import config
 
 os.makedirs("output", exist_ok=True)
 os.makedirs("temp", exist_ok=True)
 
+
 def generate_video(data, index):
+    if not validate_script(data):
+        print("Invalid script skipped")
+        return
+
     level = data["level"]
 
     temp_dir = f"temp/video_{index}"
@@ -46,14 +51,17 @@ def generate_video(data, index):
 
     print(f"Video creado: {final}")
 
+
 def main():
     check_ffmpeg()
 
-    with open("videos.json", "r") as f:
-        data = json.load(f)
+    levels = ["A1", "A2", "B1", "B2", "C1"]
 
-    for i, video in enumerate(data):
-        generate_video(video, i)
+    scripts = generate_multiple(levels, 1)
+
+    for i, script in enumerate(scripts):
+        generate_video(script, i)
+
 
 if __name__ == "__main__":
     main()

@@ -10,3 +10,13 @@ def check_ffmpeg():
     except:
         print("FFmpeg not found")
         exit()
+
+
+def validate_script(script):
+    required = [
+        "hook", "error", "fix",
+        "grammar_tip", "class_tip",
+        "examples", "real_example"
+    ]
+
+    return all(k in script for k in required)

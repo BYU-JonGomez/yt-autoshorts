@@ -1,16 +1,13 @@
-# Everyday English Lab - Video Generator
+# Everyday English Lab - AI Video Generator
 
-Automated system to generate English learning shorts using Python + FFmpeg.
+Automated system to create English learning shorts using AI + Python + FFmpeg.
 
-## Features
-- JSON-based content
-- CEFR levels (A1–C1)
-- Real-life dialogues
-- Automated video generation
-
-## Run
+## Setup
 
 python -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
+
+## Run
+
 python main.py

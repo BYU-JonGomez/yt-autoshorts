@@ -2,6 +2,7 @@ venv/
 __pycache__/
 output/
 temp/
+logs/
+.env
 *.mp4
 *.png
-*.log
