@@ -12,6 +12,9 @@ def create_scene(text, path):
     img = Image.new("RGB", (config.WIDTH, config.HEIGHT), config.BACKGROUND_COLOR)
     draw = ImageDraw.Draw(img)
 
+    # forzar saltos de línea naturales
+    text = text.replace(". ", ".\n")
+
     font, lines = auto_font_size(
         text,
         config.FONT_PATH,
@@ -20,11 +23,25 @@ def create_scene(text, path):
         draw
     )
 
-    y = config.HEIGHT // 3
+    total_height = 0
+    line_sizes = []
 
     for line in lines:
-        draw.text((100, y), line, fill=(255,255,255), font=font)
-        y += 80
+        bbox = draw.textbbox((0, 0), line, font=font)
+        h = bbox[3] - bbox[1]
+        total_height += h + 15
+        line_sizes.append((line, h))
+
+    y = (config.HEIGHT - total_height) // 2
+
+    for line, h in line_sizes:
+        bbox = draw.textbbox((0, 0), line, font=font)
+        w = bbox[2] - bbox[0]
+
+        x = (config.WIDTH - w) // 2
+        draw.text((x, y), line, fill=(255,255,255), font=font)
+
+        y += h + 15
 
     img.save(path)
 
@@ -72,5 +89,3 @@ def main():
 
     build_video(data, 0)
 
-if __name__ == "__main__":
-    main()
