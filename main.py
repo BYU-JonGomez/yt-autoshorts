@@ -1,67 +1,76 @@
 import os
-from core.ai_generator import generate_multiple
-from core.scene_builder import create_scene_pro
-from core.video_builder import create_video, add_music
-from core.utils import check_ffmpeg, validate_script
+from PIL import Image, ImageDraw
 import config
 
-os.makedirs("output", exist_ok=True)
+from core.ai_generator import generate_script
+from core.video_builder import create_video
+from utils.text_utils import auto_font_size
+
 os.makedirs("temp", exist_ok=True)
 
+def create_scene(text, path):
+    img = Image.new("RGB", (config.WIDTH, config.HEIGHT), config.BACKGROUND_COLOR)
+    draw = ImageDraw.Draw(img)
 
-def generate_video(data, index):
-    if not validate_script(data):
-        print("Invalid script skipped")
-        return
+    font, lines = auto_font_size(
+        text,
+        config.FONT_PATH,
+        config.WIDTH * 0.8,
+        config.HEIGHT * 0.6,
+        draw
+    )
 
-    level = data["level"]
+    y = config.HEIGHT // 3
 
-    temp_dir = f"temp/video_{index}"
-    os.makedirs(temp_dir, exist_ok=True)
+    for line in lines:
+        draw.text((100, y), line, fill=(255,255,255), font=font)
+        y += 80
 
-    level_dir = f"output/{level}"
-    os.makedirs(level_dir, exist_ok=True)
+    img.save(path)
 
+def build_video(data, index):
     scenes = [
-        ([f"Level {level}"], "normal", config.DURATIONS["level"]),
-        ([data["hook"]], "normal", config.DURATIONS["hook"]),
-        (["❌ " + data["error"]], "error", config.DURATIONS["error"]),
-        (["✅ " + data["fix"]], "fix", config.DURATIONS["fix"]),
-        ([data["grammar_tip"]], "normal", config.DURATIONS["grammar"]),
-        ([data["class_tip"]], "normal", config.DURATIONS["class"]),
-        (data["examples"], "normal", config.DURATIONS["examples"]),
-        (data["real_example"], "dialog", config.DURATIONS["real"]),
-        ([data["cta"]], "normal", config.DURATIONS["cta"])
+        data["hook"],
+        "❌ " + data["error"],
+        "✅ " + data["fix"],
+        data["grammar_tip"],
+        data["class_tip"],
+        "\n".join(data["real_example"]),
+        data["cta"]
     ]
 
     files = []
-    durations = []
+    durations = [2,2,2,2,2,2,1]
 
-    for i, (text, style, duration) in enumerate(scenes):
-        file = f"{temp_dir}/scene_{i}.png"
-        create_scene_pro(text, file, style)
-        files.append(file)
-        durations.append(duration)
+    for i, text in enumerate(scenes):
+        path = f"temp/{index}_{i}.png"
+        create_scene(text, path)
+        files.append(path)
 
-    raw = f"{temp_dir}/raw.mp4"
-    final = f"{level_dir}/video_{index}.mp4"
+    output = f"output/{data['level']}/video_{index}.mp4"
+    os.makedirs(f"output/{data['level']}", exist_ok=True)
 
-    create_video(files, durations, raw)
-    add_music(raw, final)
+    create_video(files, durations, output)
 
-    print(f"Video creado: {final}")
+# def main():
+#     levels = ["A1","A2","B1","B2","C1"]
+
+#     for i in range(3):
+#         level = levels[i]
+#         data = generate_script(level)
+#         build_video(data, i)
 
 
+    
 def main():
-    check_ffmpeg()
+    level = "A1"
 
-    levels = ["A1", "A2", "B1", "B2", "C1"]
+    data = generate_script(level)
 
-    scripts = generate_multiple(levels, 1)
+    print("\n📄 DATA GENERADA:\n")
+    print(data)
 
-    for i, script in enumerate(scripts):
-        generate_video(script, i)
-
+    build_video(data, 0)
 
 if __name__ == "__main__":
     main()

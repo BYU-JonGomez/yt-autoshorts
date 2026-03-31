@@ -1,43 +1,37 @@
-import json
 import os
+import json
+import openai
 from dotenv import load_dotenv
-from openai import OpenAI
-from core.prompt_builder import build_prompt
 
 load_dotenv()
 
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 def generate_script(level):
-    prompt = build_prompt(level)
-
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {"role": "system", "content": "Return only JSON."},
-            {"role": "user", "content": prompt}
-        ],
-        temperature=0.7
-    )
-
-    content = response.choices[0].message.content
+    prompt = f"Create a short English lesson for level {level} in JSON format."
 
     try:
-        return json.loads(content)
-    except:
-        print("JSON error:")
-        print(content)
-        return None
+        response = openai.ChatCompletion.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}]
+        )
 
+        content = response["choices"][0]["message"]["content"]
+        data = json.loads(content)
+        data["level"] = level
 
-def generate_multiple(levels, count_per_level=1):
-    scripts = []
+        return data
 
-    for level in levels:
-        for _ in range(count_per_level):
-            script = generate_script(level)
-            if script:
-                scripts.append(script)
-
-    return scripts
+    except Exception as e:
+        print("⚠️ fallback:", e)
+        return {
+            "level": level,
+            "hook": "STOP saying this",
+            "error": "I have 30 years",
+            "fix": "I am 30 years old",
+            "grammar_tip": "Use 'to be'",
+            "class_tip": "I am + age",
+            "examples": ["I’m 25", "She’s 40"],
+            "real_example": ["How old are you?", "I’m 25"],
+            "cta": "Save this"
+        }
