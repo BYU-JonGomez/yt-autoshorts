@@ -6,23 +6,31 @@ from core.ai_generator import generate_script
 from core.video_builder import create_video
 from utils.text_utils import auto_font_size
 
+# Crear carpetas necesarias
 os.makedirs("temp", exist_ok=True)
+os.makedirs("output", exist_ok=True)
 
+
+# =========================
+# CREAR ESCENA (IMAGEN)
+# =========================
 def create_scene(text, path):
     img = Image.new("RGB", (config.WIDTH, config.HEIGHT), config.BACKGROUND_COLOR)
     draw = ImageDraw.Draw(img)
 
-    # forzar saltos de línea naturales
+    # Forzar saltos de línea para mejor lectura
     text = text.replace(". ", ".\n")
 
+    # Ajuste automático de fuente
     font, lines = auto_font_size(
         text,
         config.FONT_PATH,
-        config.WIDTH * 0.8,
-        config.HEIGHT * 0.6,
+        int(config.WIDTH * 0.8),
+        int(config.HEIGHT * 0.6),
         draw
     )
 
+    # Calcular altura total del bloque de texto
     total_height = 0
     line_sizes = []
 
@@ -32,60 +40,86 @@ def create_scene(text, path):
         total_height += h + 15
         line_sizes.append((line, h))
 
+    # Centrado vertical
     y = (config.HEIGHT - total_height) // 2
 
+    # Dibujar texto centrado
     for line, h in line_sizes:
         bbox = draw.textbbox((0, 0), line, font=font)
         w = bbox[2] - bbox[0]
 
         x = (config.WIDTH - w) // 2
-        draw.text((x, y), line, fill=(255,255,255), font=font)
+        draw.text((x, y), line, fill=config.COLORS["primary"], font=font)
 
         y += h + 15
 
     img.save(path)
 
+
+# =========================
+# GENERAR VIDEO COMPLETO
+# =========================
 def build_video(data, index):
+    level = data["level"]
+
+    # Crear carpeta por nivel
+    level_folder = f"output/{level}"
+    os.makedirs(level_folder, exist_ok=True)
+
+    # Escenas del video
     scenes = [
         data["hook"],
         "❌ " + data["error"],
         "✅ " + data["fix"],
-        data["grammar_tip"],
-        data["class_tip"],
+        "💡 " + data["grammar_tip"],
+        "🎓 " + data["class_tip"],
+        "\n".join(data["examples"]),
         "\n".join(data["real_example"]),
-        data["cta"]
+        "💾 " + data["cta"]
     ]
 
-    files = []
-    durations = [2,2,2,2,2,2,1]
+    # Duraciones por escena (segundos)
+    durations = [2, 2, 2, 2, 2, 2, 2, 1]
 
+    scene_files = []
+
+    # Crear imágenes
     for i, text in enumerate(scenes):
         path = f"temp/{index}_{i}.png"
         create_scene(text, path)
-        files.append(path)
+        scene_files.append(path)
 
-    output = f"output/{data['level']}/video_{index}.mp4"
-    os.makedirs(f"output/{data['level']}", exist_ok=True)
+    # Ruta final del video
+    output_path = f"{level_folder}/video_{index}.mp4"
 
-    create_video(files, durations, output)
+    # Crear video
+    create_video(scene_files, durations, output_path)
 
-# def main():
-#     levels = ["A1","A2","B1","B2","C1"]
-
-#     for i in range(3):
-#         level = levels[i]
-#         data = generate_script(level)
-#         build_video(data, i)
+    print(f"✅ Video generado: {output_path}")
 
 
-    
+# =========================
+# MAIN
+# =========================
 def main():
+    print("🚀 INICIANDO SISTEMA...\n")
+
+    levels = ["A1", "A2", "B1", "B2", "C1"]
+
+    # Generar 1 video de prueba
     level = "A1"
 
     data = generate_script(level)
 
-    print("\n📄 DATA GENERADA:\n")
+    print("📄 DATA GENERADA:\n")
     print(data)
+    print("\n🎬 GENERANDO VIDEO...\n")
 
     build_video(data, 0)
 
+
+# =========================
+# ENTRY POINT
+# =========================
+if __name__ == "__main__":
+    main()
